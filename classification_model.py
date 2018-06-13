@@ -191,16 +191,36 @@ class NeuralNetwork(object):
         db.append((2/self.mtrain) * np.sum(self.dactivation[0](z[0]) * dA[1]))
         #db1 = (2/m) * np.sum(drelu(cache["z1"]) * dA1)
         #grads = {"dW1" : dW1, "db1" : db1, "dW2" : dW2, "db2" : db2}
-        return dA,dW,db
+        return dW,db
+
+    def __adjust_weights(self,dW,db):
+        self.parameters[2] -= self.alpha*dW[0]
+        #parameters["W2"] = parameters["W2"] - alpha * grads["dW2"]
+        self.parameters[0] -= self.alpha*dW[1]
+        #parameters["W1"] = parameters["W1"] - alpha * grads["dW1"]
+        self.parameters[1] -= self.alpha*db[1]
+        #parameters["b1"] = parameters["b1"] - alpha * grads["db1"]
+        self.parameters[3] -= self.alpha*db[0]
+        #parameters["b2"] = parameters["b2"] - alpha * grads["db2"]
+
+    def __calculate_cost(self,a):
+        return np.sum(np.square(a - self.dataset["Ytrain"]))/self.mtrain
+
+    def __calculate_accuracy(a2,Ytrain,m):
+        predictions = (a2 > 0.5)
+        acc = (predictions == Ytrain)
+        acc = np.sum(acc) / m
+        return acc
+
 
 
     def train_model(self):
         self.__initialise_weights()
         for i in range(self.iterations):
             a,z = self.__feedforward()
-            dA,dW,db = self.__calculate_grads(a,z)
-            #parameters = adjust_weights(parameters,alpha,grads)
-            #print(calculate_cost(cache["a2"],Ytrain,mtrain))
+            dW,db = self.__calculate_grads(a,z)
+            self.__adjust_weights(dW,db)
+            print(self.__calculate_cost(a[2]))
         #print("Training Accuracy:" + str(calculate_accuracy(cache["a2"],Ytrain,mtrain)))
         #test_model(Xtest,Ytest,parameters,mtest)
 
