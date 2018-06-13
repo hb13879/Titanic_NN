@@ -25,6 +25,20 @@ def feature_normalisation(train):
     train["Age"] = (train["Age"]-train["Age"].mean())/train["Age"].std()
     train["Fare"] = (train["Fare"]-train["Fare"].mean())/train["Fare"].std()
 
+def relu(x):
+    return x * (x>0)
+
+def drelu(x):
+    x[x<=0] = 0
+    x[x>0] = 1
+    return x
+
+def dsigmoid(x):
+    return sigmoid(x) * (1-sigmoid(x))
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
 def initialise_weights(hidden_units,features,output_units):
     W1 = np.random.rand(hidden_units,features)
     W2 = np.random.rand(output_units,hidden_units)
@@ -44,21 +58,7 @@ def feedforward(Xtrain,parameters):
     cache = {"z1" : z1, "a1" : a1, "z2" : z2, "a2" : a2}
     return cache
 
-def relu(x):
-    return x * (x>0)
-
-def drelu(x):
-    x[x<=0] = 0
-    x[x>0] = 1
-    return x
-
-def dsigmoid(x):
-    return sigmoid(x) * (1-sigmoid(x))
-
-def sigmoid(x):
-  return 1 / (1 + np.exp(-x))
-
-def calculate_grads(cache,Ytrain,m,W1,W2,X,i):
+def calculate_grads(cache,Ytrain,m,W1,W2,X):
     dA2 = (cache["a2"] - Ytrain)
     dW2 = (2/m) * np.dot((dsigmoid(cache["z2"]) * dA2), np.transpose(cache["a1"]))
     db2 = (2/m) * np.sum(dsigmoid(cache["z2"]) * dA2)
@@ -68,12 +68,11 @@ def calculate_grads(cache,Ytrain,m,W1,W2,X,i):
     grads = {"dW1" : dW1, "db1" : db1, "dW2" : dW2, "db2" : db2}
     return grads
 
-def adjust_weights(parameters,alpha,grads,i):
+def adjust_weights(parameters,alpha,grads):
     parameters["W2"] = parameters["W2"] - alpha * grads["dW2"]
     parameters["W1"] = parameters["W1"] - alpha * grads["dW1"]
     parameters["b1"] = parameters["b1"] - alpha * grads["db1"]
     parameters["b2"] = parameters["b2"] - alpha * grads["db2"]
-    #np.savetxt("W2_" + str(i) + ".csv", W2, delimiter=",")
     return parameters
 
 def calculate_cost(a2,Ytrain,m):
@@ -94,12 +93,10 @@ def train_neural_network(Xtrain,Ytrain):
     parameters = {"W1" : W1, "W2" : W2, "b1" : b1, "b2": b2}
     for i in range(0,iterations):
         cache = feedforward(Xtrain,parameters)
-        grads = calculate_grads(cache,Ytrain,m,W1,W2,Xtrain,i)
-        parameters = adjust_weights(parameters,alpha,grads,i)
+        grads = calculate_grads(cache,Ytrain,m,W1,W2,Xtrain)
+        parameters = adjust_weights(parameters,alpha,grads)
         print(calculate_accuracy(cache["a2"],Ytrain,m))
         print(calculate_cost(cache["a2"],Ytrain,m))
-    #np.savetxt("predictions" + str(i) + ".csv", a2, delimiter=",")
-    #np.savetxt("Ytrain" + str(i) + ".csv", Ytrain, delimiter=",")
 
 def main():
     train = read_in_data()
