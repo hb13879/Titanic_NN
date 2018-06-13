@@ -64,6 +64,7 @@ def calculate_grads(cache,Ytrain,m,parameters,X):
     dA2 = (cache["a2"] - Ytrain)
     dW2 = (2/m) * np.dot((dsigmoid(cache["z2"]) * dA2), np.transpose(cache["a1"]))
     db2 = (2/m) * np.sum(dsigmoid(cache["z2"]) * dA2)
+    print(np.shape(dA2))
     dA1 = np.dot(parameters["W2"].T, dA2) * dsigmoid(cache["z2"])
     dW1 = (2/m) * np.dot((drelu(cache["z1"]) * dA1), np.transpose(X))
     db1 = (2/m) * np.sum(drelu(cache["z1"]) * dA1)
@@ -125,12 +126,83 @@ def main():
     complete_age_data(Xtrain)
     feature_normalisation(Xtrain)
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xtrain,Ytrain)
-    train_neural_network(Xtrain,Ytrain,Xtest,Ytest)
+    #train_neural_network(Xtrain,Ytrain,Xtest,Ytest)
+    nn = NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,iterations = 1)
 
 class NeuralNetwork(object):
 
-    def __init__(self,alpha=0.1):
-        pass
+    parameters = []
+    activation_functions = []
+    dactivation = []
+    cache = []
+    dataset = {}
+    neurons = [] #list containing number of neurons in each layer in order (excl. input layer)
+
+    def __init__(self,Xtrain,Xtest,Ytrain,Ytest,layers=2,neurons=[3,1],alpha=0.1,iterations=1000,activation_functions=[relu,sigmoid],dactivation_functions=[drelu,dsigmoid]):
+        self.alpha = alpha
+        self.iterations = iterations
+        self.layers = layers
+        self.neurons = neurons
+        self.activation_functions = activation_functions
+        self.dactivation = dactivation_functions
+        self.dataset["Xtrain"] = Xtrain
+        self.dataset["Xtest"] = Xtest
+        self.dataset["Ytrain"] = Ytrain
+        self.dataset["Ytest"] = Ytest
+        self.mtrain = np.shape(self.dataset["Xtrain"])[1]
+        self.mtest = np.shape(self.dataset["Xtest"])[1]
+        self.train_model()
+
+    def __initialise_weights(self):
+        a = np.shape(self.dataset["Xtrain"])[0]
+        print(a)
+        self.neurons = [a] + self.neurons
+        for first,second in zip(self.neurons,self.neurons[1:]):
+            w = np.random.rand(second,first)
+            b = np.zeros((second,1))
+            self.parameters.append(w)
+            self.parameters.append(b)
+
+    def __feedforward(self):
+        z = []
+        a = self.dataset["Xtrain"]
+        a = [a] + []
+        for l in range(self.layers):
+            z.append(np.dot(self.parameters[2*l],a[l]) + self.parameters[2*l+1])
+            a.append(self.activation_functions[l](z[l]))
+        return a,z
+
+
+    def __calculate_grads(self,a,z):
+
+        dA = []
+        dW = []
+        db = []
+        dA.append(a[2] - self.dataset["Ytrain"])
+        #dA2 = (cache["a2"] - Ytrain)
+        dW.append((2/self.mtrain) * np.dot((self.dactivation[1](z[1]) * dA[0]), a[1].T))
+        #dW2 = (2/m) * np.dot((dsigmoid(cache["z2"]) * dA2), np.transpose(cache["a1"]))
+        db.append((2/self.mtrain) * np.sum(self.dactivation[1](z[1]) * dA[0]))
+        #db2 = (2/m) * np.sum(dsigmoid(cache["z2"]) * dA2)
+        dA.append(np.dot(self.parameters[2].T, dA[0]) * dsigmoid(z[1]))
+        #dA1 = np.dot(parameters["W2"].T, dA2) * dsigmoid(cache["z2"])
+        dW.append((2/self.mtrain) * np.dot((self.dactivation[0](z[0]) * dA[1]), self.dataset["Xtrain"].T))
+        #dW1 = (2/m) * np.dot((drelu(cache["z1"]) * dA1), np.transpose(X))
+        db.append((2/self.mtrain) * np.sum(self.dactivation[0](z[0]) * dA[1]))
+        #db1 = (2/m) * np.sum(drelu(cache["z1"]) * dA1)
+        #grads = {"dW1" : dW1, "db1" : db1, "dW2" : dW2, "db2" : db2}
+        return dA,dW,db
+
+
+    def train_model(self):
+        self.__initialise_weights()
+        for i in range(self.iterations):
+            a,z = self.__feedforward()
+            dA,dW,db = self.__calculate_grads(a,z)
+            #parameters = adjust_weights(parameters,alpha,grads)
+            #print(calculate_cost(cache["a2"],Ytrain,mtrain))
+        #print("Training Accuracy:" + str(calculate_accuracy(cache["a2"],Ytrain,mtrain)))
+        #test_model(Xtest,Ytest,parameters,mtest)
 
 
 
