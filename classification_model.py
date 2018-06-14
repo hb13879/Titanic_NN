@@ -64,7 +64,6 @@ def calculate_grads(cache,Ytrain,m,parameters,X):
     dA2 = (cache["a2"] - Ytrain)
     dW2 = (2/m) * np.dot((dsigmoid(cache["z2"]) * dA2), np.transpose(cache["a1"]))
     db2 = (2/m) * np.sum(dsigmoid(cache["z2"]) * dA2)
-    print(np.shape(dA2))
     dA1 = np.dot(parameters["W2"].T, dA2) * dsigmoid(cache["z2"])
     dW1 = (2/m) * np.dot((drelu(cache["z1"]) * dA1), np.transpose(X))
     db1 = (2/m) * np.sum(drelu(cache["z1"]) * dA1)
@@ -127,8 +126,8 @@ def main():
     feature_normalisation(Xtrain)
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xtrain,Ytrain)
     #train_neural_network(Xtrain,Ytrain,Xtest,Ytest)
-    nn = NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,layers=2,iterations = 1000,neurons=[1,1],activation_functions=[relu,sigmoid],dactivation_functions=[drelu,dsigmoid])
-    #nn = NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,iterations=1000)
+    #nn = NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,layers=2,iterations = 1000,neurons=[1,1],activation_functions=[relu,sigmoid],dactivation_functions=[drelu,dsigmoid])
+    nn = NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,iterations=1000)
 
 class NeuralNetwork(object):
 
@@ -180,20 +179,10 @@ class NeuralNetwork(object):
         for i in range(l):
             if i == 0:
                 dA.append(a[l] - self.dataset["Ytrain"])
-                #dA2 = (cache["a2"] - Ytrain)
             dW.append((2/self.mtrain) * np.dot((self.dactivation[l-(i+1)](z[l-(i+1)]) * dA[i-1]), a[l-(i+1)].T))
-            #dW2 = (2/m) * np.dot((dsigmoid(cache["z2"]) * dA2), np.transpose(cache["a1"]))
             db.append((2/self.mtrain) * np.sum(self.dactivation[l-(i+1)](z[l-(i+1)]) * dA[i-1]))
-            #db2 = (2/m) * np.sum(dsigmoid(cache["z2"]) * dA2)
             if i != 0:
                 dA.append(np.dot(self.parameters[2*(l-i)].T, dA[i-1]) * self.dactivation[l-i](z[l-(i+1)]))
-            #dA1 = np.dot(parameters["W2"].T, dA2) * dsigmoid(cache["z2"])
-
-        #dW.append((2/self.mtrain) * np.dot((self.dactivation[0](z[0]) * dA[1]), self.dataset["Xtrain"].T))
-        #dW1 = (2/m) * np.dot((drelu(cache["z1"]) * dA1), np.transpose(X))
-        #db.append((2/self.mtrain) * np.sum(self.dactivation[0](z[0]) * dA[1]))
-        #db1 = (2/m) * np.sum(drelu(cache["z1"]) * dA1)
-        #grads = {"dW1" : dW1, "db1" : db1, "dW2" : dW2, "db2" : db2}
         return dW,db
 
     def __adjust_weights(self,dW,db):
@@ -210,8 +199,6 @@ class NeuralNetwork(object):
         acc = np.sum(acc) / self.mtrain
         return acc
 
-
-
     def train_model(self):
         self.__initialise_weights()
         for i in range(self.iterations):
@@ -220,6 +207,10 @@ class NeuralNetwork(object):
             self.__adjust_weights(dW,db)
             print(self.__calculate_cost(a[self.layers]))
         print("Training Accuracy:" + str(self.__calculate_accuracy(a[self.layers])))
+
+    def test_model(self):
+        pass
+
         #test_model(Xtest,Ytest,parameters,mtest)
 
 
