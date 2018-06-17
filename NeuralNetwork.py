@@ -1,6 +1,7 @@
 from nose.tools import assert_equal
 import numpy as np
 
+###ACTIVATION FUNCTIONS###
 def relu(x):
     return x * (x>0)
 
@@ -53,7 +54,7 @@ class NeuralNetwork(object):
             a.append(self.activation_functions[l](z[l]))
         return a,z
 
-
+    #derivative calcs shown in readme file
     def __calculate_grads(self,a,z,l):
         dA = []
         dW = []
