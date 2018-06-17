@@ -1,12 +1,11 @@
+from nose.tools import assert_equal
 import numpy as np
 
 def relu(x):
     return x * (x>0)
 
 def drelu(x):
-    x[x<=0] = 0
-    x[x>0] = 1
-    return x
+    return np.greater(x, 0).astype(int)
 
 def dsigmoid(x):
     return sigmoid(x) * (1-sigmoid(x))
@@ -15,7 +14,7 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 class NeuralNetwork(object):
-    
+
     dataset = {}
 
     def __init__(self,Xtrain,Xtest,Ytrain,Ytest,layers=2,neurons=[3,1],alpha=0.1,iterations=1000,activation_functions=[relu,sigmoid],dactivation_functions=[drelu,dsigmoid]):
@@ -100,10 +99,32 @@ class NeuralNetwork(object):
             a,z = self.__feedforward(train = True)
             dW,db = self.__calculate_grads(a,z,self.layers)
             self.__adjust_weights(dW,db)
-            print(self.__calculate_cost(a[self.layers],train=True))
+            #print(self.__calculate_cost(a[self.layers],train=True))
         print("Training Accuracy:" + str(self.__calculate_accuracy(a[self.layers],train=True)))
 
     def test_model(self):
         a,z = self.__feedforward(train=False)
         #print("Cost: " + str(self.__calculate_cost(a[self.layers],train=False)))
         print("Test Accuracy:" + str(self.__calculate_accuracy(a[self.layers],train=False)))
+
+def main():
+    test_relu()
+    test_sigmoid()
+    print("All tests passed...")
+
+def test_relu():
+    assert_equal(relu(5),5)
+    assert_equal(relu(-5),0)
+    assert_equal(drelu(5),1)
+    assert_equal(drelu(-5),0)
+    print("Relu tests passed")
+
+def test_sigmoid():
+    assert_equal(sigmoid(0),0.5)
+    assert_equal(round(sigmoid(1),3),0.731)
+    assert_equal(dsigmoid(0),0.25)
+    assert_equal(round(dsigmoid(1),3),0.197)
+    print("Sigmoid tests passed")
+
+if __name__ == '__main__':
+    main()

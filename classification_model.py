@@ -7,9 +7,7 @@ def relu(x):
     return x * (x>0)
 
 def drelu(x):
-    x[x<=0] = 0
-    x[x>0] = 1
-    return x
+    return np.greater(x, 0).astype(int)
 
 def dsigmoid(x):
     return sigmoid(x) * (1-sigmoid(x))
