@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
+import NeuralNetwork
 
 def read_in_data():
     return pd.read_csv("train.csv")
 
-
 def drop_categories(train):
     return train.drop(["PassengerId","Survived","Name","Ticket","Cabin"],1)
-
 
 def map_categories(train):
     sex_map = {"male" : 1, "female" : 0}
@@ -16,8 +15,7 @@ def map_categories(train):
     train["Embarked"] = train["Embarked"].map(embarked_map)
 
 def complete_age_data(train):
-    #find mean male an female ages
-    #mean_ages = train.groupby("Sex")["Age"].mean()
+    #find mean age
     mean_age = train["Age"].mean()
     train["Age"] = train["Age"].fillna(mean_age)
     train["Embarked"] = train["Embarked"].fillna(0)
@@ -25,85 +23,6 @@ def complete_age_data(train):
 def feature_normalisation(train):
     train["Age"] = (train["Age"]-train["Age"].mean())/train["Age"].std()
     train["Fare"] = (train["Fare"]-train["Fare"].mean())/train["Fare"].std()
-
-def relu(x):
-    return x * (x>0)
-
-def drelu(x):
-    x[x<=0] = 0
-    x[x>0] = 1
-    return x
-
-def dsigmoid(x):
-    return sigmoid(x) * (1-sigmoid(x))
-
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-def initialise_weights(hidden_units,features,output_units):
-    W1 = np.random.rand(hidden_units,features)
-    W2 = np.random.rand(output_units,hidden_units)
-    b1 = np.zeros((hidden_units,1))
-    b2 = np.zeros((output_units,1))
-    parameters = {"W1" : W1, "W2" : W2, "b1" : b1, "b2": b2}
-    return parameters
-
-def feedforward(Xtrain,parameters):
-    W1 = parameters["W1"]
-    b1 = parameters["b1"]
-    W2 = parameters["W2"]
-    b2 = parameters["b2"]
-    z1 = np.dot(W1,Xtrain) + b1
-    a1 = relu(z1)
-    z2 = np.dot(W2,a1) + b2
-    a2 = sigmoid(z2)
-    cache = {"z1" : z1, "a1" : a1, "z2" : z2, "a2" : a2}
-    return cache
-
-def calculate_grads(cache,Ytrain,m,parameters,X):
-    dA2 = (cache["a2"] - Ytrain)
-    dW2 = (2/m) * np.dot((dsigmoid(cache["z2"]) * dA2), np.transpose(cache["a1"]))
-    db2 = (2/m) * np.sum(dsigmoid(cache["z2"]) * dA2)
-    dA1 = np.dot(parameters["W2"].T, dA2) * dsigmoid(cache["z2"])
-    dW1 = (2/m) * np.dot((drelu(cache["z1"]) * dA1), np.transpose(X))
-    db1 = (2/m) * np.sum(drelu(cache["z1"]) * dA1)
-    grads = {"dW1" : dW1, "db1" : db1, "dW2" : dW2, "db2" : db2}
-    return grads
-
-def adjust_weights(parameters,alpha,grads):
-    parameters["W2"] = parameters["W2"] - alpha * grads["dW2"]
-    parameters["W1"] = parameters["W1"] - alpha * grads["dW1"]
-    parameters["b1"] = parameters["b1"] - alpha * grads["db1"]
-    parameters["b2"] = parameters["b2"] - alpha * grads["db2"]
-    return parameters
-
-def calculate_cost(a2,Ytrain,m):
-    return np.sum(np.square(a2 - Ytrain))/m
-
-def calculate_accuracy(a2,Ytrain,m):
-    predictions = (a2 > 0.5)
-    acc = (predictions == Ytrain)
-    acc = np.sum(acc) / m
-    return acc
-
-def test_model(Xtest,Ytest,parameters,m):
-    cache = feedforward(Xtest,parameters)
-    print("Cost: " + str(calculate_cost(cache["a2"],Ytest,m)))
-    print("Test Accuracy:" + str(calculate_accuracy(cache["a2"],Ytest,m)))
-
-def train_neural_network(Xtrain,Ytrain,Xtest,Ytest):
-    alpha = 0.5
-    iterations = 10000
-    mtrain = np.shape(Ytrain)[1]
-    mtest = np.shape(Ytest)[1]
-    parameters = initialise_weights(3,np.shape(Xtrain)[0],1)
-    for i in range(0,iterations):
-        cache = feedforward(Xtrain,parameters)
-        grads = calculate_grads(cache,Ytrain,mtrain,parameters,Xtrain)
-        parameters = adjust_weights(parameters,alpha,grads)
-        print(calculate_cost(cache["a2"],Ytrain,mtrain))
-    print("Training Accuracy:" + str(calculate_accuracy(cache["a2"],Ytrain,mtrain)))
-    test_model(Xtest,Ytest,parameters,mtest)
 
 def train_test_split(X,Y):
     X = X.values
@@ -125,111 +44,10 @@ def main():
     complete_age_data(Xtrain)
     feature_normalisation(Xtrain)
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xtrain,Ytrain)
-    #train_neural_network(Xtrain,Ytrain,Xtest,Ytest)
     #nn = NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,layers=2,iterations = 1000,neurons=[1,1],activation_functions=[relu,sigmoid],dactivation_functions=[drelu,dsigmoid])
-    nn = NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,iterations=1000)
-
-class NeuralNetwork(object):
-
-    parameters = []
-    activation_functions = []
-    dactivation = []
-    cache = []
-    dataset = {}
-    neurons = [] #list containing number of neurons in each layer in order (excl. input layer)
-
-    def __init__(self,Xtrain,Xtest,Ytrain,Ytest,layers=2,neurons=[3,1],alpha=0.1,iterations=1000,activation_functions=[relu,sigmoid],dactivation_functions=[drelu,dsigmoid]):
-        self.alpha = alpha
-        self.iterations = iterations
-        self.layers = layers
-        self.neurons = neurons
-        self.activation_functions = activation_functions
-        self.dactivation = dactivation_functions
-        self.dataset["Xtrain"] = Xtrain
-        self.dataset["Xtest"] = Xtest
-        self.dataset["Ytrain"] = Ytrain
-        self.dataset["Ytest"] = Ytest
-        self.mtrain = np.shape(self.dataset["Xtrain"])[1]
-        self.mtest = np.shape(self.dataset["Xtest"])[1]
-        self.train_model()
-        self.test_model()
-
-    def __initialise_weights(self):
-        a = np.shape(self.dataset["Xtrain"])[0]
-        self.neurons = [a] + self.neurons
-        for first,second in zip(self.neurons,self.neurons[1:]):
-            w = np.random.rand(second,first)
-            b = np.zeros((second,1))
-            self.parameters.append(w)
-            self.parameters.append(b)
-
-    def __feedforward(self, train):
-        z = []
-        if train:
-            a = self.dataset["Xtrain"]
-        else:
-            a = self.dataset["Xtest"]
-        a = [a] + []
-        for l in range(self.layers):
-            z.append(np.dot(self.parameters[2*l],a[l]) + self.parameters[(2*l)+1])
-            a.append(self.activation_functions[l](z[l]))
-        return a,z
-
-
-    def __calculate_grads(self,a,z,l):
-        dA = []
-        dW = []
-        db = []
-        for i in range(l):
-            if i == 0:
-                dA.append(a[l] - self.dataset["Ytrain"])
-            dW.append((2/self.mtrain) * np.dot((self.dactivation[l-(i+1)](z[l-(i+1)]) * dA[i-1]), a[l-(i+1)].T))
-            db.append((2/self.mtrain) * np.sum(self.dactivation[l-(i+1)](z[l-(i+1)]) * dA[i-1]))
-            if i != 0:
-                dA.append(np.dot(self.parameters[2*(l-i)].T, dA[i-1]) * self.dactivation[l-i](z[l-(i+1)]))
-        return dW,db
-
-    def __adjust_weights(self,dW,db):
-        for i in range(self.layers):
-            self.parameters[i*2] -= self.alpha*dW[-1-i]
-            self.parameters[(i*2)+1] -= self.alpha*db[-1-i]
-
-    def __calculate_cost(self,a,train):
-        if train:
-            y = self.dataset["Ytrain"]
-            m = self.mtrain
-        else:
-            y = self.dataset["Ytest"]
-            m = self.mtest
-        return np.sum(np.square(a - y))/self.mtest
-
-    def __calculate_accuracy(self,a,train):
-        predictions = (a > 0.5)
-        if train:
-            y = self.dataset["Ytrain"]
-            m = self.mtrain
-        else:
-            y = self.dataset["Ytest"]
-            m = self.mtest
-        acc = (predictions == y)
-        acc = np.sum(acc) / m
-        return acc
-
-    def train_model(self):
-        self.__initialise_weights()
-        for i in range(self.iterations):
-            a,z = self.__feedforward(train = True)
-            dW,db = self.__calculate_grads(a,z,self.layers)
-            self.__adjust_weights(dW,db)
-            print(self.__calculate_cost(a[self.layers],train=True))
-        print("Training Accuracy:" + str(self.__calculate_accuracy(a[self.layers],train=True)))
-
-    def test_model(self):
-        a,z = self.__feedforward(train=False)
-        #print("Cost: " + str(self.__calculate_cost(a[self.layers],train=False)))
-        print("Test Accuracy:" + str(self.__calculate_accuracy(a[self.layers],train=False)))
-
-
+    nn = NeuralNetwork.NeuralNetwork(Xtrain,Xtest,Ytrain,Ytest,iterations=1000)
+    nn.train_model()
+    nn.test_model()
 
 if __name__ == '__main__':
     main()
