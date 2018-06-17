@@ -152,6 +152,7 @@ class NeuralNetwork(object):
         self.mtrain = np.shape(self.dataset["Xtrain"])[1]
         self.mtest = np.shape(self.dataset["Xtest"])[1]
         self.train_model()
+        self.test_model()
 
     def __initialise_weights(self):
         a = np.shape(self.dataset["Xtrain"])[0]
@@ -162,9 +163,12 @@ class NeuralNetwork(object):
             self.parameters.append(w)
             self.parameters.append(b)
 
-    def __feedforward(self):
+    def __feedforward(self, train):
         z = []
-        a = self.dataset["Xtrain"]
+        if train:
+            a = self.dataset["Xtrain"]
+        else:
+            a = self.dataset["Xtest"]
         a = [a] + []
         for l in range(self.layers):
             z.append(np.dot(self.parameters[2*l],a[l]) + self.parameters[(2*l)+1])
@@ -190,29 +194,40 @@ class NeuralNetwork(object):
             self.parameters[i*2] -= self.alpha*dW[-1-i]
             self.parameters[(i*2)+1] -= self.alpha*db[-1-i]
 
-    def __calculate_cost(self,a):
-        return np.sum(np.square(a - self.dataset["Ytrain"]))/self.mtrain
+    def __calculate_cost(self,a,train):
+        if train:
+            y = self.dataset["Ytrain"]
+            m = self.mtrain
+        else:
+            y = self.dataset["Ytest"]
+            m = self.mtest
+        return np.sum(np.square(a - y))/self.mtest
 
-    def __calculate_accuracy(self,a2):
-        predictions = (a2 > 0.5)
-        acc = (predictions == self.dataset["Ytrain"])
-        acc = np.sum(acc) / self.mtrain
+    def __calculate_accuracy(self,a,train):
+        predictions = (a > 0.5)
+        if train:
+            y = self.dataset["Ytrain"]
+            m = self.mtrain
+        else:
+            y = self.dataset["Ytest"]
+            m = self.mtest
+        acc = (predictions == y)
+        acc = np.sum(acc) / m
         return acc
 
     def train_model(self):
         self.__initialise_weights()
         for i in range(self.iterations):
-            a,z = self.__feedforward()
+            a,z = self.__feedforward(train = True)
             dW,db = self.__calculate_grads(a,z,self.layers)
             self.__adjust_weights(dW,db)
-            print(self.__calculate_cost(a[self.layers]))
-        print("Training Accuracy:" + str(self.__calculate_accuracy(a[self.layers])))
+            print(self.__calculate_cost(a[self.layers],train=True))
+        print("Training Accuracy:" + str(self.__calculate_accuracy(a[self.layers],train=True)))
 
     def test_model(self):
-        pass
-
-        #test_model(Xtest,Ytest,parameters,mtest)
-
+        a,z = self.__feedforward(train=False)
+        #print("Cost: " + str(self.__calculate_cost(a[self.layers],train=False)))
+        print("Test Accuracy:" + str(self.__calculate_accuracy(a[self.layers],train=False)))
 
 
 
