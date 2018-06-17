@@ -15,13 +15,8 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 class NeuralNetwork(object):
-
-    parameters = []
-    activation_functions = []
-    dactivation = []
-    cache = []
+    
     dataset = {}
-    neurons = [] #list containing number of neurons in each layer in order (excl. input layer)
 
     def __init__(self,Xtrain,Xtest,Ytrain,Ytest,layers=2,neurons=[3,1],alpha=0.1,iterations=1000,activation_functions=[relu,sigmoid],dactivation_functions=[drelu,dsigmoid]):
         self.alpha = alpha
@@ -36,7 +31,8 @@ class NeuralNetwork(object):
         self.dataset["Ytest"] = Ytest
         self.mtrain = np.shape(self.dataset["Xtrain"])[1]
         self.mtest = np.shape(self.dataset["Xtest"])[1]
-        
+        self.parameters = []
+
     def __initialise_weights(self):
         a = np.shape(self.dataset["Xtrain"])[0]
         self.neurons = [a] + self.neurons
